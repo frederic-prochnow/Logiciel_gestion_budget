@@ -3,6 +3,7 @@ package presentation.moduleEDF;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,10 +24,14 @@ import metier.moduleEDF.MetierFenetreEdf;
 public class FenetreEdf {
 	
 	private JTextField fournisseur,conso;
-	private JLabel labelNom,labelConso,infoConso;
+	private JLabel labelNom,labelConso,infoConso,labelInfoMensuel,labelInfoTrimestriel,labelInfoAnnuel;
+	private JLabel labelInfo1,labelInfo2,labelInfo3,labelInfo4;
 	private JRadioButton p3,p6,p9,p12,p15,p18,p24,p30,p36;
 	private JRadioButton hphc,tc; //hphc heure pleine / heure creuse -- tc tarif continu
 	private JButton boutonInfoConso;
+	int puissance;
+	Double consommation,montantMensuel, montantTrimestriel, montantAnnuel;
+	String fournisseurElecticite,typeContrat;
 
 	public FenetreEdf() {
 		JFrame fenetre = new JFrame();
@@ -131,28 +136,100 @@ public class FenetreEdf {
 	    JButton okBouton = new JButton("Calculer votre prix");
 	    okBouton.addActionListener(new ActionListener(){
 	    	public void actionPerformed(ActionEvent arg0) {        
-	    		JFrame frameInfoConso = new JFrame();
-	    		frameInfoConso.setTitle("Estimation de votre facture d'électrcité");
-	    		frameInfoConso.setPreferredSize(new Dimension(800,750));
-	    		frameInfoConso.setLocationRelativeTo(null);
-	    		if(!hphc.isSelected() && !tc.isSelected()){
-	    			JOptionPane jop = new JOptionPane();
-	    			jop.showMessageDialog(null, "Merci de sélectionner au moins un type de contrat", "Erreur", JOptionPane.ERROR_MESSAGE);
+	    		if(controleDesDonnees() == -1){
 	    			return;
 	    		}
-	    		int puissance;
-	    		int consommation;
-	    		MetierFenetreEdf metier;
+	    		puissance = calulPuissance();
+	    		consommation = Double.parseDouble(conso.getText());
+	    		fournisseurElecticite = fournisseur.getText();
+	    		JFrame frameInfoConso = new JFrame();
+	    		Font font = new Font("Serif", Font.PLAIN, 36);
 	    		
+	    		frameInfoConso.setTitle("Estimation de votre facture d'électrcité");
+	    		frameInfoConso.setPreferredSize(new Dimension(500,500));
+	    		frameInfoConso.setLocationRelativeTo(null);
+	    		MetierFenetreEdf metier = new MetierFenetreEdf();
+	    		if(hphc.isSelected()){
+	    			montantMensuel = metier.prixMensuelFactureHPHC(puissance, consommation);
+	    			montantTrimestriel = metier.prixTrimestrielFactureHPHC(puissance, consommation);
+	    			montantAnnuel = metier.prixAnnuelFactureHPHC(puissance, consommation);
+	    			typeContrat = "Heure Pleine/Heure Creuse";
+	    		}else{
+	    			montantMensuel = metier.prixMensuelFactureTC(puissance, consommation);
+	    			montantTrimestriel = metier.prixTrimestrielFactureTC(puissance, consommation);
+	    			montantAnnuel = metier.prixAnnuelFactureTC(puissance, consommation);
+	    			typeContrat = "Tarif continu";
+	    		}
+	    		JPanel panInformationRappel = new JPanel();
+	    		panInformationRappel.setBackground(Color.white);
+	    		panInformationRappel.setPreferredSize(new Dimension(220, 60));
+	    		panInformationRappel.setBorder(BorderFactory.createTitledBorder("Rappel de vos informations :"));
+	    		labelInfo1= new JLabel("Votre fournisseur _______ : "+fournisseurElecticite);
+	    		labelInfo2= new JLabel("Votre puissance ________ : "+puissance+"kVA");
+	    		labelInfo3= new JLabel("Votre type de contrat ____ : "+typeContrat);
+	    		labelInfo4= new JLabel("Votre consommation ____ : "+consommation+"kWh");
+	    		panInformationRappel.setLayout(new GridLayout(4, 1));
+	    		panInformationRappel.add(labelInfo1);
+	    		panInformationRappel.add(labelInfo2);
+	    		panInformationRappel.add(labelInfo3);
+	    		panInformationRappel.add(labelInfo4);
+	    		
+	    		JPanel panInformationMensuel = new JPanel();
+	    		panInformationMensuel.setBackground(Color.white);
+	    		panInformationMensuel.setPreferredSize(new Dimension(220, 60));
+	    		panInformationMensuel.setBorder(BorderFactory.createTitledBorder("Votre facture est estimé à un montant mensuel de :"));
+	    		labelInfoMensuel = new JLabel(montantMensuel+"€");
+	    		labelInfoMensuel.setFont(font);
+	    		panInformationMensuel.add(labelInfoMensuel);
+	    		
+	    		JPanel panInformationTrimestriel= new JPanel();
+	    		panInformationTrimestriel.setBackground(Color.white);
+	    		panInformationTrimestriel.setPreferredSize(new Dimension(220, 60));
+	    		panInformationTrimestriel.setBorder(BorderFactory.createTitledBorder("Votre facture est estimé à un montant trimestriel de :"));
+	    		labelInfoTrimestriel = new JLabel(montantTrimestriel+"€");
+	    		labelInfoTrimestriel.setFont(font);
+	    		panInformationTrimestriel.add(labelInfoTrimestriel);
+	    		
+	    		JPanel panInformationAnnuel= new JPanel();
+	    		panInformationAnnuel.setBackground(Color.white);
+	    		panInformationAnnuel.setPreferredSize(new Dimension(220, 60));
+	    		panInformationAnnuel.setBorder(BorderFactory.createTitledBorder("Votre facture est estimé à un montant annuel de :"));
+	    		labelInfoAnnuel = new JLabel(montantAnnuel+"€");
+	    		labelInfoAnnuel.setFont(font);
+	    		panInformationAnnuel.add(labelInfoAnnuel);
+	    		
+	    		JPanel panControl = new JPanel();
+	    		panControl.setBackground(Color.gray);
+	    		panInformationAnnuel.setPreferredSize(new Dimension(220, 60));
+	    		JButton cancelBouton = new JButton("Retour");
+	    	    cancelBouton.addActionListener(new ActionListener(){
+	    	    	public void actionPerformed(ActionEvent arg0) {
+	    	    		frameInfoConso.setVisible(false);
+	    	    		puissance = 0;
+	    	    		consommation = 0.0;
+	    	    		fournisseurElecticite = "";
+	    	    		montantMensuel =0.0;
+	    	    		montantAnnuel=0.0;
+	    	    		typeContrat="";
+	    	    	}      
+	    	    });
+	    	    panControl.add(cancelBouton);
 	    	    
+	    	    frameInfoConso.setLayout(new GridLayout(5, 1));
+	    	    frameInfoConso.add(panInformationRappel);
+	    	    frameInfoConso.add(panInformationMensuel);
+	    	    frameInfoConso.add(panInformationTrimestriel);
+	    	    frameInfoConso.add(panInformationAnnuel);
+	    	    frameInfoConso.add(panControl);
 	    	    frameInfoConso.pack();
 	    	    frameInfoConso.setVisible(true);
-	    	}     
+	    	}
+  
 	    });
 	    JButton cancelBouton = new JButton("Quitter");
 	    cancelBouton.addActionListener(new ActionListener(){
 	    	public void actionPerformed(ActionEvent arg0) {
-	    		
+	    		fenetre.setVisible(false);
 	    	}      
 	    });
 	    control.add(okBouton);
@@ -167,4 +244,57 @@ public class FenetreEdf {
 	    fenetre.pack();
 		fenetre.setVisible(true);
 	}
+	
+	private int controleDesDonnees() {
+		if(fournisseur.getText().equals("")){
+			JOptionPane jop = new JOptionPane();
+			jop.showMessageDialog(null, "Le nom de votre fournisseur n'est pas completer!", "Erreur", JOptionPane.ERROR_MESSAGE);
+			return -1;
+		}else if(!hphc.isSelected() && !tc.isSelected()){
+			JOptionPane jop = new JOptionPane();
+			jop.showMessageDialog(null, "Merci de sélectionner au moins un type de contrat", "Erreur", JOptionPane.ERROR_MESSAGE);
+			return -1;
+		}else if(hphc.isSelected() && p3.isSelected()){
+			JOptionPane jop = new JOptionPane();
+			jop.showMessageDialog(null, "La puissance de 3kVA n'est pas compatible avec le type de contrat Heure Pleine / Heure Creuse.\n"
+					+ "Merci de sélectionner une puissance de minimum 6 kVA.", "Erreur", JOptionPane.ERROR_MESSAGE);
+			return -1;
+		}else if(conso.getText().equals("")){
+			JOptionPane jop = new JOptionPane();
+			jop.showMessageDialog(null, "Merci de renseigner votre consommation mensuelle en kWh!", "Erreur", JOptionPane.ERROR_MESSAGE);
+			return -1;
+		}else if(!conso.getText().equals("")){
+			try{
+				Double.parseDouble(conso.getText());
+			}catch(NumberFormatException e){
+				JOptionPane jop = new JOptionPane();
+    			jop.showMessageDialog(null, "Merci de renseigner votre consommation mensuelle dans un format valide!", "Erreur", JOptionPane.ERROR_MESSAGE);
+    			return -1;
+			}
+		}
+		return 0;
+	} 
+	
+	private int calulPuissance() {
+		if(p3.isSelected()){
+			return 3;
+		}else if (p6.isSelected()){
+			return 6;
+		}else if (p9.isSelected()){
+			return 9;
+		}else if(p12.isSelected()){
+			return 12;
+		}else if(p15.isSelected()){
+			return 15;
+		}else if(p18.isSelected()){
+			return 18;
+		}else if(p24.isSelected()){
+			return 24;
+		}else if(p30.isSelected()){
+			return 30;
+		}else if(p36.isSelected()){
+			return 36;
+		}
+		return 0;
+	}  
 }
