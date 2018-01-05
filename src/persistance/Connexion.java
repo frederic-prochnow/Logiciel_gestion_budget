@@ -36,6 +36,7 @@ public class Connexion {
             statement.close();
         } catch (SQLException e) {
             e.printStackTrace();
+            System.out.println("Erreur dans la fermeture !");
         }
     }
     
@@ -48,6 +49,16 @@ public class Connexion {
             System.out.println("Erreur dans la requette : " + requette);
         }
         return resultat;
-  
+    }
+    
+    public boolean querySansResultSet(String requette) {
+        try {
+        	statement.execute(requette);
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Erreur dans la requette : " + requette);
+            return false;
+        }
     }
 }
